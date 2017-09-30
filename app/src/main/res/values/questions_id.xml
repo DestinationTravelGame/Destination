@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <item name="boxAnswer1_multiple_choice_one_true" type="id"/>
+    <item name="boxAnswer2_multiple_choice_one_true" type="id"/>
+    <item name="boxAnswer3_multiple_choice_one_true" type="id"/>
+    <item name="boxAnswer4_multiple_choice_one_true" type="id"/>
+    <item name="boxAnswer5_multiple_choice_one_true" type="id"/>
+    <item name="boxAnswer6_multiple_choice_one_true" type="id"/>
+    <item name="boxAnswer7_multiple_choice_one_true" type="id"/>
+    <item name="boxAnswer8_multiple_choice_one_true" type="id"/>
+    <item name="boxAnswer9_multiple_choice_one_true" type="id"/>
+    <item name="boxAnswer10_multiple_choice_one_true" type="id"/>
+
+    <item name="checkBox0_multiple_choice_more_true" type="id"/>
+    <item name="checkBox1_multiple_choice_more_true" type="id"/>
+    <item name="checkBox2_multiple_choice_more_true" type="id"/>
+    <item name="checkBox3_multiple_choice_more_true" type="id"/>
+    <item name="checkBox4_multiple_choice_more_true" type="id"/>
+    <item name="checkBox5_multiple_choice_more_true" type="id"/>
+    <item name="checkBox6_multiple_choice_more_true" type="id"/>
+    <item name="checkBox7_multiple_choice_more_true" type="id"/>
+    <item name="checkBox8_multiple_choice_more_true" type="id"/>
+    <item name="checkBox9_multiple_choice_more_true" type="id"/>
+    <item name="checkBox10_multiple_choice_more_true" type="id"/>
+
+</resources>

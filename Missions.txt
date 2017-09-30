@@ -1,0 +1,29 @@
+1.	Show all mission checkpoints and lines half-transparent     +
+2.	2 types of points on user profile(checkpoint,mission)	+
+3.	checkpoint min.  time(add interface)  gumarayin bar       +
+4.	start from any point(with start button)    +
+5.	first point pulsing when approach+start mission button
+6.	remove transparent when click mission first point and make bold   +
+7.	iceberg bar(notification)
+8.	when press start mission if not near to first point ->~ ”go to first point”…
+	Get random last point with radius ~500m(square)(class Constants) 
+9.	countdown before question (5,4,3,2,1) with text “Answer questions as fast as possible”
+10.	for each question 100 papax each 1 second
+11.	question papax countdown bar 
+12. 	if answer is true collect papaxs else not
+13.	each checkpoint 2 questions (class Constant)
+14.	no matter answer is true get checkpoint points(but wait if you want to get points) when leaving notify to stay longer 
+15.	when checkpoint is done mark as done
+16.	notify “go to next point”
+17.	when finish open shop with title “Time to buy some clues”
+	1 hour to find last point
+18.	each clue has own price
+19.	on clue click buy it and go to iceberg
+20.	in iceberg menu go to shop button
+21.	use clue from iceberg menu
+22.	2 types of clues 
+	22.1	coordinates clue (on top of the map vandak X: ???????????? Y:????????????  )(both x and y)      expensive 
+	22.2	arrow pointing to hidden point(timeout 5 sec(class Contant) with countdown bar and going to transparent) 
+	22.3	text clue(coming soon)
+23: 	on “This is the exit” button click notify are you sure if yes finish mission and go to finish activity (congrats 
+You have finished mission with X papaxs share facebook …,or oops looser…..try again

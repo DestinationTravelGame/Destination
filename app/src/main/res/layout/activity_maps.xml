@@ -1,0 +1,94 @@
+<RelativeLayout android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_alignParentTop="true">
+
+
+            <com.mapbox.mapboxsdk.maps.MapView
+                android:id="@+id/map"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+            </com.mapbox.mapboxsdk.maps.MapView>
+
+
+            <ToggleButton
+                android:id="@+id/toggleButtonSwaper"
+                android:layout_width="70dp"
+                android:layout_height="wrap_content"
+                android:text="ToggleButton"
+                android:onClick="switchModeToMissionsOrCheckpoints"
+                android:layout_alignParentRight="true"
+                android:layout_alignParentEnd="true" />
+
+            <ProgressBar
+                android:id="@+id/checkpointTimeProgress"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:indeterminate="false"
+                android:progress="0"
+                android:progressDrawable="@drawable/progressbar_states"
+                android:visibility="gone" />
+            <Button
+                android:id="@+id/passCheckpoint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:layout_marginBottom="6dp"
+                android:background="#008000"
+                android:text="@string/checkpoint_pass"
+                android:visibility="gone" />
+            <Button
+                android:id="@+id/startMission"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:layout_marginBottom="6dp"
+                android:background="#008000"
+                android:text="@string/startMission"
+                android:visibility="gone"/>
+
+        </RelativeLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/question_timer"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentRight="true"
+            android:padding="4dp"
+            android:textSize="16pt"
+            android:textStyle="bold"/>
+        <include layout="@layout/before_question_layout"/>
+
+        <include layout="@layout/questions_multiple_choice_one_true_layout"/>
+
+        <include layout="@layout/questions_multiple_choice_more_true_layout"/>
+
+        <include layout="@layout/questions_select_difference_layout"/>
+
+        <include layout="@layout/user_profile_layout"/>
+
+        <include layout="@layout/person_photo_and_score"/>
+
+        <include layout="@layout/checkpoint_info_layout"/>
+
+        <include layout="@layout/iceberg_layout"/>
+    </RelativeLayout>
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/imageViewForLoading"
+        android:visibility="gone"/>
+</RelativeLayout>
