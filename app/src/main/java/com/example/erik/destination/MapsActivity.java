@@ -512,6 +512,12 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
         if(mode== missionStartedMode){
 
         }
+        findViewById(R.id.passCheckpoint).setTag(null);//
+        findViewById(R.id.passCheckpoint).setVisibility(View.GONE);//
+        findViewById(R.id.checkpointTimeProgress).setVisibility(View.GONE);//
+        ((ProgressBar) findViewById(R.id.checkpointTimeProgress)).setProgress(0);//
+        findViewById(R.id.checkpointTimeProgress).setTag(null);// to work the checkpoint mode after changing mode
+
         findViewById(R.id.passCheckpoint).setVisibility(View.GONE);
         findViewById(R.id.startMission).setVisibility(View.GONE);
 
@@ -557,6 +563,7 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
         @Override
         public void run() {
             if (whichModeIsActive == checkpointMode) {
+                if((Constants.Pair<String, Float>) passCheckpoint.getTag()!=null){
                 if (isNearCheckpoint(((Constants.Pair<String, Float>) passCheckpoint.getTag()).first, curLocMarker.getPosition())) {
                     if (((ProgressBar) findViewById(R.id.checkpointTimeProgress)).getProgress() < ((ProgressBar) findViewById(R.id.checkpointTimeProgress)).getMax()) {
                         findViewById(R.id.checkpointTimeProgress).postDelayed(this, 1000);
@@ -570,6 +577,8 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
                         user.setCurrentCheckpoint((((Constants.Pair<String, Float>) passCheckpoint.getTag()).first),0);
                     }
                 }
+                }
+
             }
             if(whichModeIsActive==missionStartedMode){
                 if (isNearCheckpoint((String) findViewById(R.id.checkpointTimeProgress).getTag(), curLocMarker.getPosition())) {
@@ -589,13 +598,13 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
                 }else{
                     //TODO notify user that will not get point for this checkpoint
                 }
-            } else{
+            }/* else{//todo think about this
                 findViewById(R.id.passCheckpoint).setTag(null);
                 findViewById(R.id.passCheckpoint).setVisibility(View.GONE);
                 findViewById(R.id.checkpointTimeProgress).setVisibility(View.GONE);
                 ((ProgressBar) findViewById(R.id.checkpointTimeProgress)).setProgress(0);
                 findViewById(R.id.checkpointTimeProgress).setTag(null);
-            }
+            }*/
         }
     };
    /* private void startedMission() {
