@@ -1,5 +1,6 @@
 package com.example.erik.destination;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -694,6 +695,7 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
 
 
     Target targetForSellectDifference;
+    @SuppressLint("WrongViewCast")
     void showCheckpointQuestion(final String id) {
         findViewById(R.id.before_question_textview).setVisibility(View.VISIBLE);
         for(int i=secondsBeforeQuestion ;i>0;i--){
@@ -748,12 +750,14 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
                     findViewById(R.id.selectDifferenceImage).getLocationOnScreen(positionOfImage);
                     getWindowManager().getDefaultDisplay().getSize(a);
                     int imageWidth=a.x-findViewById(R.id.questions_select_difference).getPaddingTop();
+                    @SuppressLint("WrongViewCast")
                     ViewGroup.LayoutParams params1=findViewById(R.id.selectDifferenceImage).getLayoutParams();
                     params1.width=imageWidth;
                     params1.height= (int) (((double)imageWidth/bitmap.getWidth())*bitmap.getHeight());
                     findViewById(R.id.selectDifferenceImage).setLayoutParams(params1);
                     question.setRealRingSize((int) (question.getRingSizeInPercent()*imageWidth/100));
                     question.setTrueAnswerForThisScreen((int) (imageWidth*question.getTrueAnswer().first/100), (int) (imageWidth*question.getTrueAnswer().second/100));
+                    @SuppressLint("WrongViewCast")
                     ViewGroup.LayoutParams params=findViewById(R.id.selectDifferenceRing).getLayoutParams();
                     params.width=question.getRealRingSize();
                     params.height=question.getRealRingSize();
@@ -784,6 +788,7 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
                 String aMixed = mixed[i];
                 CheckBox temp = new CheckBox(this);
                 temp.setId(Rid);
+
                 temp.setLayoutParams(findViewById(R.id.checkBox0_multiple_choice_more_true).getLayoutParams());
                 temp.setText(aMixed);
                 ((LinearLayout) findViewById(R.id.answers_multiple_choice_more_true)).addView(temp);

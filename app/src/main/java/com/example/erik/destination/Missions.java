@@ -109,6 +109,7 @@ public class Missions {
                     if (missionsMap.get(id) == null) {
                         String id1 = id.replaceAll(",", ".");
                         String[] splitedId = id1.split("_");
+                        splitedId[splitedId.length - 1]=splitedId[splitedId.length - 1].split("%")[0];
                         if (mMap.getCameraPosition().zoom > constants.maxZoom && mMap.getProjection().getVisibleRegion().latLngBounds.contains(new LatLng(Double.valueOf(splitedId[splitedId.length - 2]), Double.valueOf(splitedId[splitedId.length - 1])))) {
                             downloadMission(id);
                         }
@@ -116,6 +117,7 @@ public class Missions {
                         if (!mMap.getMarkers().contains(missionsMap.get(id).getMarker())) {
                             String id1 = id.replaceAll(",", ".");
                             String[] splitedId = id1.split("_");
+                            splitedId[splitedId.length - 1]=splitedId[splitedId.length - 1].split("%")[0];
                             if (mMap.getCameraPosition().zoom > constants.maxZoom && mMap.getProjection().getVisibleRegion().latLngBounds.contains(new LatLng(Double.valueOf(splitedId[splitedId.length - 2]), Double.valueOf(splitedId[splitedId.length - 1])))) {
                                 if (missionsMap.get(id).isLoaded()) {
                                     if (thisModeIsActive)
@@ -136,6 +138,7 @@ public class Missions {
         if (isStarted && thisModeIsActive) {
             String Id1 = Id.replaceAll(",", ".");
             String[] splitedId = Id1.split("_");
+            splitedId[splitedId.length - 1]=splitedId[splitedId.length - 1].split("%")[0];
             if (mMap.getCameraPosition().zoom > constants.maxZoom && mMap.getProjection().getVisibleRegion().latLngBounds.contains(new LatLng(Double.valueOf(splitedId[splitedId.length - 2]), Double.valueOf(splitedId[splitedId.length - 1])))) {
                 downloadMission(Id);
             }
@@ -146,18 +149,22 @@ public class Missions {
         if (!missionsMap.containsKey(Id)) {
             DatabaseReference data = FirebaseDatabase.getInstance().getReference("missions");
             String[] splitedId = Id.split("_");
-            for (int i = 0; i < splitedId.length - 3; i++) {
+            splitedId[splitedId.length - 1]=splitedId[splitedId.length - 1].split("%")[0];
+            for (int i = 0; i < splitedId.length - 2; i++) {
                 data = data.child(splitedId[i]);
             }
             data = data.child(Id);
+            Log.v(constants.getLogTag(),data.toString());
             data.addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot dataSnapshot) {
+                    Log.v(constants.getLogTag(),dataSnapshot.toString());
                     Mission a = new Mission();
                     a.setId(dataSnapshot.getKey());
                     String b = dataSnapshot.getKey();
                     b = b.replaceAll(",", ".");
                     String[] splitedId = b.split("_");
+                    splitedId[splitedId.length - 1]=splitedId[splitedId.length - 1].split("%")[0];
                     a.setLocation(new LatLng(Double.valueOf(splitedId[splitedId.length - 2]), Double.valueOf(splitedId[splitedId.length - 1])));
                     if (dataSnapshot.hasChild("checkpoints")) {
                         HashMap<Integer, String> checkpoints = new HashMap<>();
@@ -180,7 +187,7 @@ public class Missions {
                         }
                         a.setDescription(description);
                     }
-                    a.setTimeMinutes(dataSnapshot.child("time").getValue(long.class).intValue());
+                    a.setTimeMinutes(Integer.parseInt(dataSnapshot.child("duration").getValue(String.class)));
                     if (dataSnapshot.hasChild("types")) {
                         Vector<Integer> types = new Vector<>();
                         for (DataSnapshot dat : dataSnapshot.child("types").getChildren()) {
