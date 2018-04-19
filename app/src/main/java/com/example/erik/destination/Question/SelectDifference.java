@@ -1,6 +1,8 @@
 package com.example.erik.destination.Question;
 
-import com.example.erik.destination.Constants;
+import android.net.Uri;
+
+import com.example.erik.destination.Constants.Pair;
 
 import java.util.HashMap;
 
@@ -10,9 +12,9 @@ import java.util.HashMap;
 
 public class SelectDifference extends Question {
     private String id;
-    private String URl;
-    private Constants.Pair<Double,Double> trueAnswer=new Constants.Pair<>();
-    private Constants.Pair<Integer,Integer> trueAnswerForThisScreen=new Constants.Pair<>();
+    private Uri URl;
+    private Pair<Double,Double> trueAnswer=new Pair<>();
+    private Pair<Integer,Integer> trueAnswerForThisScreen=new Pair<>();
     private double ringSizeInPercent=-1;
     private int realRingSize=-1;
     private HashMap<String,String> comments=new HashMap<>();
@@ -30,11 +32,11 @@ public class SelectDifference extends Question {
         this.id = id;
     }
 
-    public String getURl() {
+    public Uri getURl() {
         return URl;
     }
 
-    public void setURl(String URl) {
+    public void setURl(Uri URl) {
         this.URl = URl;
     }
 
@@ -62,20 +64,20 @@ public class SelectDifference extends Question {
         super.setNull(a);
     }
 
-    public Constants.Pair<Double, Double> getTrueAnswer() {
+    public Pair<Double, Double> getTrueAnswer() {
         return trueAnswer;
     }
 
     public void setTrueAnswer(double x,double y) {
-        this.trueAnswer = new Constants.Pair<>(x,y);
+        this.trueAnswer = new Pair<>(x,y);
     }
 
-    public Constants.Pair<Integer, Integer> getTrueAnswerForThisScreen() {
+    public Pair<Integer, Integer> getTrueAnswerForThisScreen() {
         return trueAnswerForThisScreen;
     }
 
     public void setTrueAnswerForThisScreen(int x,int y) {
-        this.trueAnswerForThisScreen = new Constants.Pair<>(x,y);
+        this.trueAnswerForThisScreen = new Pair<>(x,y);
     }
 
     public double getRingSizeInPercent() {

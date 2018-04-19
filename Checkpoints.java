@@ -51,8 +51,8 @@ public class Checkpoints {
 
     Checkpoints(){
     }
-    public Constants.Pair<String,Float> isNearToAnyCheckpoint(LatLng location){
-        Constants.Pair<String,Float> returning = null;
+    public Pair<String,Float> isNearToAnyCheckpoint(LatLng location){
+        Pair<String,Float> returning = null;
         if(!checkpointMap.isEmpty() && location!=null) {
             for (Checkpoint a : checkpointMap.values()) {
                 if(a!=null) {
@@ -60,9 +60,9 @@ public class Checkpoints {
                     Location.distanceBetween(a.getLocation().getLatitude(), a.getLocation().getLongitude(), location.getLatitude(), location.getLongitude(), distance);
                     if (distance[0] < a.getMarkerRadius())
                         if(returning==null) {
-                            returning = new Constants.Pair<>(a.getId(), distance[0]);
+                            returning = new Pair<>(a.getId(), distance[0]);
                         }else if(returning.getSecond()>distance[0])
-                            returning=new Constants.Pair<>(a.getId(),distance[0]);
+                            returning=new Pair<>(a.getId(),distance[0]);
                 }
             }
         }

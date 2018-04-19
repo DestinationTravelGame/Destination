@@ -1,5 +1,4 @@
 package com.example.erik.destination;
-
 import com.google.firebase.database.FirebaseDatabase;
 
 /**

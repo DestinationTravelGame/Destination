@@ -4,6 +4,7 @@ import android.content.Context;
 import android.location.Location;
 import android.util.Log;
 
+import com.example.erik.destination.Constants.Pair;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -69,8 +70,8 @@ public class Checkpoints {
         return false;
     }
 
-    public Constants.Pair<String,Float> isNearToAnyCheckpoint(LatLng location){
-        Constants.Pair<String,Float> returning = null;
+    public Pair<String,Float> isNearToAnyCheckpoint(LatLng location){
+        Pair<String,Float> returning = null;
         if(!checkpointMap.isEmpty() && location!=null) {
             for (Checkpoint a : checkpointMap.values()) {
                 if(a!=null) {
@@ -78,9 +79,9 @@ public class Checkpoints {
                     Location.distanceBetween(a.getLocation().getLatitude(), a.getLocation().getLongitude(), location.getLatitude(), location.getLongitude(), distance);
                     if (distance[0] < a.getMarkerRadius())
                         if(returning==null) {
-                            returning = new Constants.Pair<>(a.getId(), distance[0]);
+                            returning = new Pair<>(a.getId(), distance[0]);
                         }else if(returning.getSecond()>distance[0])
-                            returning=new Constants.Pair<>(a.getId(),distance[0]);
+                            returning=new Pair<>(a.getId(),distance[0]);
                 }
             }
         }
@@ -253,7 +254,7 @@ public class Checkpoints {
                         a.setUserRate((float) dataSnapshot.child("user_rate").getValue());
 
                     if (dataSnapshot.hasChild("questions")) {
-                        List<String> questions = new ArrayList<String>();
+                        ArrayList<String> questions = new ArrayList<String>();
                         for (DataSnapshot dat : dataSnapshot.child("questions").getChildren()) {
                             questions.add((String) dat.getValue());
                         }
@@ -278,8 +279,8 @@ public class Checkpoints {
                     if(dataSnapshot.hasChild("min_time"))
                         a.setMinTime(dataSnapshot.child("min_time").getValue(long.class).intValue());
                     if(a.getQuestions()!=null) {
-                        for (String id : a.getQuestions())
-                            questions.downloadQuestion(id);
+                        /*for (String id : a.getQuestions())
+                            questions.downloadQuestion(id);*/
                     }
                     checkpointMap.put(dataSnapshot.getKey(), a);
                     //vectorForWaitingCheckpoints.add(dataSnapshot.getKey());
@@ -371,7 +372,7 @@ public class Checkpoints {
                     a.setUserRate((float) dataSnapshot.child("user_rate").getValue());
 
                 if (dataSnapshot.hasChild("questions")) {
-                    List<String> questions = new ArrayList<>();
+                    ArrayList<String> questions = new ArrayList<>();
                     for (DataSnapshot dat : dataSnapshot.child("questions").getChildren()) {
                         questions.add((String) dat.getValue());
                     }

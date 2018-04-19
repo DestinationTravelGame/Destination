@@ -116,7 +116,7 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
             passCheckpointQuest.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    Constants.Pair<String, Float> nearCheckpointId = (Constants.Pair<String, Float>) passCheckpointQuest.getTag();
+                    Pair<String, Float> nearCheckpointId = (Pair<String, Float>) passCheckpointQuest.getTag();
                     checkpoints.checkpointMap.get(nearCheckpointId.getFirst()).start();
                     showCheckpointQuestion(checkpoints.checkpointMap.get(nearCheckpointId.getFirst()).getId());
                 }
@@ -363,8 +363,8 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
                 if (((farRight.getLatitude() - mapView.farRight.getLatitude()) > 0.0000000001 || (farRight.getLongitude() - mapView.farRight.getLongitude()) > 0.0000000001 || (nearLeft.getLatitude() - mapView.nearLeft.getLatitude()) > 0.0000000001 || (nearLeft.getLongitude() - mapView.nearLeft.getLongitude()) > 0.0000000001)) {
                     // Log.v(constants.getLogTag(), String.valueOf(mMap.getProjection().getVisibleRegion().toString()));
                     if (questionSelectDifference.getTag() != null) {
-                        if (checkpoints.checkpointMap.get(((Constants.Pair<String, Float>) questionSelectDifference.getTag()).first) != null) {
-                            checkpoints.checkpointMap.get(((Constants.Pair<String, Float>) questionSelectDifference.getTag()).first).changeRadiusWithZoom(mMap.getProjection().getVisibleRegion().farRight, mMap.getProjection().getVisibleRegion().nearLeft);
+                        if (checkpoints.checkpointMap.get(((Pair<String, Float>) questionSelectDifference.getTag()).first) != null) {
+                            checkpoints.checkpointMap.get(((Pair<String, Float>) questionSelectDifference.getTag()).first).changeRadiusWithZoom(mMap.getProjection().getVisibleRegion().farRight, mMap.getProjection().getVisibleRegion().nearLeft);
                         }
                     }
                     checkpoints.updateMapForNewCheckpoints();
@@ -384,18 +384,18 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
     Runnable checkpointReach = new Runnable() {
         @Override
         public void run() {
-            Constants.Pair<String, Float> curr = checkpoints.isNearToAnyCheckpoint(CurrentLocation);
+            Pair<String, Float> curr = checkpoints.isNearToAnyCheckpoint(CurrentLocation);
             if (curr == null) {
                 if (passCheckpointQuest.getTag() != null) {
-                    if (checkpoints.checkpointMap.get(((Constants.Pair<String, Float>) passCheckpointQuest.getTag()).first) != null)
-                        checkpoints.checkpointMap.get(((Constants.Pair<String, Float>) passCheckpointQuest.getTag()).first).stopPulsing();
+                    if (checkpoints.checkpointMap.get(((Pair<String, Float>) passCheckpointQuest.getTag()).first) != null)
+                        checkpoints.checkpointMap.get(((Pair<String, Float>) passCheckpointQuest.getTag()).first).stopPulsing();
                 }
                 passCheckpointQuest.setVisibility(View.GONE);
             } else {
                 if (checkpoints.checkpointMap.get(curr.first).isLoaded() && !user.ifCheckpointDone(checkpoints.checkpointMap.get(curr.first).getId())) {
                     passCheckpointQuest.setVisibility(View.VISIBLE);
                     passCheckpointQuest.setTag(curr);
-                    checkpoints.checkpointMap.get(((Constants.Pair<String, Float>) passCheckpointQuest.getTag()).first).startPulsing();
+                    checkpoints.checkpointMap.get(((Pair<String, Float>) passCheckpointQuest.getTag()).first).startPulsing();
                 }
             }
             passCheckpointQuest.postDelayed(checkpointReach, 500);
@@ -480,12 +480,12 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
                     return true;
                 }
             });
-            questionsMultipleChoiceOneTrue.setTag(new Constants.Pair<>(id, selectedQuestionId));
+            questionsMultipleChoiceOneTrue.setTag(new Pair<>(id, selectedQuestionId));
         }
     }
 
     public void submitAnswerForMultipleChoiceOneTrue(View view) {
-        Constants.Pair<String, String> idAndQuestionId = (Constants.Pair<String, String>) questionsMultipleChoiceOneTrue.getTag();
+        Pair<String, String> idAndQuestionId = (Pair<String, String>) questionsMultipleChoiceOneTrue.getTag();
         if (answersMultipleChoiceOneTrue.getCheckedRadioButtonId() != -1) {
             RadioButton selected = (RadioButton) findViewById(answersMultipleChoiceOneTrue.getCheckedRadioButtonId());
             answersMultipleChoiceOneTrue.clearCheck();

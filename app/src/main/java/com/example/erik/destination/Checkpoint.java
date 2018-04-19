@@ -16,6 +16,7 @@ import com.mapbox.mapboxsdk.geometry.LatLng;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +36,7 @@ public class Checkpoint {
     private LatLng location;//
     private Map<String,String> Title=new HashMap<>();//
     private Map<String,String> Description=new HashMap<>();//
-    private List<String> Questions;//
+    private ArrayList<String> Questions;//
     private List<String> Photos;//
     private List<String> Types;//
     private URI MarkerURI;//
@@ -315,6 +316,21 @@ public class Checkpoint {
         }
         return null;
     }
+
+    public ArrayList<String> chooseQuestions(int count){
+        Collections.shuffle(Questions);
+        ArrayList<String> questionsOutput=new ArrayList<>();
+        if(count>Questions.size()) {
+            questionsOutput.addAll(Questions);
+        }
+        else{
+            for(int i=0;i<count;i++){
+                questionsOutput.add(Questions.get(i));
+            }
+        }
+        return questionsOutput;
+    }
+
     public Marker getMarker() {
         return markerCheckpoints;
     }
@@ -420,11 +436,11 @@ public class Checkpoint {
         Description = description;
     }
 
-    public List<String> getQuestions() {
+    public ArrayList<String> getQuestions() {
         return Questions;
     }
 
-    public void setQuestions(List<String> questions) {
+    public void setQuestions(ArrayList<String> questions) {
         Questions = questions;
         //Log.v(constants.getLogTag(),"aaaaaaa"+Id+"  "+questions.toString());
 

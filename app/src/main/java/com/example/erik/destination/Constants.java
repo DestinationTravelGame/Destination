@@ -15,8 +15,8 @@ import com.mapbox.mapboxsdk.geometry.LatLng;
  */
 
 public class Constants {
-    private static final String TAG = "Stex em";
-    private static final int distance = 15;
+    public static final String TAG = "Stex em";
+    public static final int distance = 15;
     public static final int distanceMission=15;
     public static final int numberOfLinesOnPolygon = 3;
     public static final int maxZoom = 8;
@@ -28,18 +28,24 @@ public class Constants {
 
     public static final int missionCheckpointDone=1;
     public static final int missionCheckpointNotDone=0;
-    public static final int missionCheckpointNotStarted=-1;
-    public static final int missionCheckpointStartedNotDone2QuestionsLast=2;
-    public static final int missionCheckpointStartedNotDone1QuestionLast=3;
+    public static final int missionCheckpointNotStarted=-6;
+    public static final int missionCheckpointStartedNotDone2QuestionsLast=-4;
+    public static final int stateNotAnswering=-5;
+    public static final int stateAnswering=-3;
+
+    public static final int missionCheckpointStartedNotDone1QuestionLast=-1;
+    public static final int missionCheckpointStartedNotNear=-5;
 
     public static final int checkpointCirecleStroke=10;
     public static final int minTimeToStayInCheckpoint=15;//in Sec
 
     public static final int lastPointRadius=500;//in metr
 
-    public static final int numberOfQuestionsInCheckpoints=2;
+    public static final int nQuestionsInCheckpoints=2;
 
     public static final int secondsBeforeQuestion=5;
+
+    public static final int secondsForQuestion=50;//in sec
 
 
     public String getLogTag() {
@@ -73,7 +79,7 @@ public class Constants {
         }
     }
 
-    public Bitmap getCircleCroppedBitmap(Bitmap bitmap) {
+    public static Bitmap getCircleCroppedBitmap(Bitmap bitmap) {
         Bitmap output = Bitmap.createBitmap(bitmap.getWidth(),
                 bitmap.getHeight(), Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(output);

@@ -3,6 +3,7 @@ package com.example.erik.destination;
 import android.os.SystemClock;
 import android.widget.TextView;
 
+import com.example.erik.destination.Constants.Pair;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -11,11 +12,17 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Set;
 
+import static com.example.erik.destination.Constants.missionCheckpointDone;
 import static com.example.erik.destination.Constants.missionCheckpointNotStarted;
+import static com.example.erik.destination.Constants.missionCheckpointStartedNotDone1QuestionLast;
 import static com.example.erik.destination.Constants.missionCheckpointStartedNotDone2QuestionsLast;
+import static com.example.erik.destination.Constants.missionCheckpointStartedNotNear;
+import static com.example.erik.destination.Constants.nQuestionsInCheckpoints;
+import static com.example.erik.destination.Constants.stateAnswering;
+import static com.example.erik.destination.Constants.stateNotAnswering;
 import static com.example.erik.destination.MapsActivity.missions;
 
 /**
@@ -109,21 +116,34 @@ public class User {
                 if (dataSnapshot.child("CurrentMission").getValue() != null) {
                     currentMission = new CurrentMission();
                     currentMission.setMissionID((String) dataSnapshot.child("CurrentMission").child("MissionID").getValue());
-                    currentMission.setCurrentCheckpoint((String) dataSnapshot.child("CurrentMission").child("CurrentCheckpoint").getValue());
-                    HashMap<Integer, HashMap<String,Integer>> Checkpoints = new HashMap<>();
-                    for (DataSnapshot dat : dataSnapshot.child("CurrentMission").child("Checkpoints").getChildren()) {
-                        if(dat.getKey().equals("UnknownPoint")){
-                            LatLng unknown=new LatLng(dat.child("Lat").getValue(double.class),dat.child("Long").getValue(double.class));
+                    currentMission.setScore(((Long) dataSnapshot.child("CurrentMission").child("Score").getValue()).intValue());
+                    ArrayList<Integer> CheckpointsStates = new ArrayList<>();
+                    ArrayList<ArrayList<String>> questions=new ArrayList<>();
+                    ArrayList<ArrayList<Integer>> questionsScores=new ArrayList<>();
+                    LatLng unknown=null;
+
+                    for (DataSnapshot eachCheckpoint : dataSnapshot.child("CurrentMission").child("Checkpoints").getChildren()) {
+                        if(eachCheckpoint.getKey().equals("UnknownPoint")){
+                            unknown=new LatLng(eachCheckpoint.child("Lat").getValue(double.class),eachCheckpoint.child("Long").getValue(double.class));
                         } else {
-                            HashMap<String,Integer> hash=new HashMap<>();
-                            for(DataSnapshot dat1:dat.getChildren()){
-                                hash.put(dat1.getKey(),dat1.getValue(Long.class).intValue());
-                            }
-                            Checkpoints.put(Integer.valueOf(dat.getKey()), hash);
+                            CheckpointsStates.add(Integer.valueOf(eachCheckpoint.getKey()),eachCheckpoint.child("State").getValue(Long.class).intValue());
+                            ArrayList<String> questionsForEach=new ArrayList<>();
+                            ArrayList<Integer> questionsScoresForEach=new ArrayList<>();
+                            for(DataSnapshot insideQuestions:eachCheckpoint.child("Questions").getChildren()){
+                                for(DataSnapshot dat:insideQuestions.getChildren()){
+                                    questionsForEach.add(Integer.valueOf(insideQuestions.getKey()),dat.getKey());
+                                    questionsScoresForEach.add(Integer.valueOf(insideQuestions.getKey()),dat.getValue(Long.class).intValue());
+                                }
+
+                                }
+                            questions.add(Integer.valueOf(eachCheckpoint.getKey()),questionsForEach);
+                            questionsScores.add(Integer.valueOf(eachCheckpoint.getKey()),questionsScoresForEach);
+
                         }
                     }
-
-                    currentMission.setCheckpoints(Checkpoints);
+                    currentMission.setUnknownPoint(unknown);
+                    currentMission.setQuestions(questions);
+                    currentMission.setCheckpointsStates(CheckpointsStates);
                 }
                 if (dataSnapshot.child("CurrentCheckpoints").getValue() != null) {
                     for (DataSnapshot dat : dataSnapshot.child("CurrentCheckpoints").getChildren())
@@ -145,33 +165,58 @@ public class User {
     public int startMission(final String id,LatLng unknownPoint) {
         if (!DoneMissions.containsKey(id)) {
             Mission mission = missions.getMissionById(id);
-            DatabaseReference currnetDatabase = FirebaseDatabase.getInstance().getReference("User").child(FirebaseAuth.getInstance().getCurrentUser().getUid()).child("CurrentMission");
+            DatabaseReference currentDatabase = FirebaseDatabase.getInstance().getReference("User").child(FirebaseAuth.getInstance().getCurrentUser().getUid()).child("CurrentMission");
             long current = SystemClock.elapsedRealtime();
             currentMission.setMissionID(id);
-            currnetDatabase.child("MissionID").setValue(id);
+            currentDatabase.child("MissionID").setValue(id);
             HashMap<Integer,String> checkpointClone = (HashMap<Integer,String>) mission.getCheckpointsIDs().clone();
             HashMap<Integer,HashMap<String,Integer>> checkpointsSetIdInMissStrIdIsDone = new HashMap<>();
-            HashMap<String,HashMap<String,Integer>> checkpointsSetIdInMissStrIdIsDoneFordDatabase = new HashMap<>();
+            ArrayList<Integer> CheckpointStates=new ArrayList<>();
+            ArrayList<ArrayList<String>> allQuestions=new ArrayList<>();
+
             for (int i=0;i<checkpointClone.size();i++) {
-                HashMap<String,Integer> hashMap=new HashMap<String,Integer>();
+                HashMap<String,Integer> hashMap=new HashMap<>();
+                //For Questions
+                Checkpoint currentCheckpoint=Checkpoints.getCheckpoint(mission.getCheckpointsIDs().get(i));
+                ArrayList<String> selectedQuestionsInCheckpoint=currentCheckpoint.chooseQuestions(nQuestionsInCheckpoints);
+                currentDatabase.child("Checkpoints").child(i+"").child("Questions").setValue(selectedQuestionsInCheckpoint);
+                allQuestions.add(i,selectedQuestionsInCheckpoint);
+                //
+                CheckpointStates.add(i,missionCheckpointNotStarted);
+                currentDatabase.child("Checkpoints").child(i+"").child("State").setValue(missionCheckpointNotStarted);
                 hashMap.put(mission.getCheckpointsIDs().get(i),missionCheckpointNotStarted);
                 checkpointsSetIdInMissStrIdIsDone.put(i,hashMap);
-                checkpointsSetIdInMissStrIdIsDoneFordDatabase.put(String.valueOf(i),hashMap);
+
             }
-            currnetDatabase.child("Checkpoints").setValue(checkpointsSetIdInMissStrIdIsDoneFordDatabase);
-            currnetDatabase.child("Checkpoints").child("UnknownPoint").child("Lat").setValue(unknownPoint.getLatitude());
-            currnetDatabase.child("Checkpoints").child("UnknownPoint").child("Long").setValue(unknownPoint.getLongitude());
-            currentMission.setCheckpoints(checkpointsSetIdInMissStrIdIsDone);
-            currentMission.setCurrentCheckpoint(checkpointClone.get(0));
+
+            currentDatabase.child("Checkpoints").child("UnknownPoint").child("Lat").setValue(unknownPoint.getLatitude());
+            currentDatabase.child("Checkpoints").child("UnknownPoint").child("Long").setValue(unknownPoint.getLongitude());
+            currentDatabase.child("Score").setValue(0);
+            currentMission.setQuestions(allQuestions);
+
+            //Setting 0
+            ArrayList<ArrayList<Integer>> questions=new ArrayList<>();
+            for(int i=0;i<allQuestions.size();++i) {
+                ArrayList<Integer> questionScore=new ArrayList<>();
+                for (int j = 0; j<allQuestions.get(i).size(); ++j) {
+                    questionScore.add(j,0);
+                }
+                questions.add(i,questionScore);
+            }
+            //
+            currentMission.questionsScores=questions;
+            //TODO to start
+            currentMission.setScore(0);
+            CheckpointStates.set(0,missionCheckpointStartedNotNear);
+            currentMission.setCheckpointsStates(CheckpointStates);
+            currentDatabase.child("Checkpoints").child(0+"").child("State").setValue(missionCheckpointStartedNotNear);
+            currentMission.setStateNotAnswering();
+            //TODO
             return currentMission.getFinishTime();
         }
         return 0;
     }
 
-    public void missionCheckpointStarted(){
-
-        database.child("CurrentMission").child(String.valueOf(getCurrentCheckpoint(currentMission.getCurrentCheckpoint())));
-    }
     public boolean ifCheckpointDone(String id) {
         if (DoneCheckpoints.get(id) == null)
             return false;
@@ -229,45 +274,191 @@ public class User {
 
     public class CurrentMission {
         private String MissionID;
-        private HashMap<Integer,HashMap<String,Integer>> Checkpoints = new HashMap<>();
-        private String CurrentCheckpoint;
+        private ArrayList<Integer> CheckpointsStates = new ArrayList<>();
         private int StartTime;
         private int FinishTime;
-        private Constants constants = new Constants();
         private HashMap<String, Integer> Tools = new HashMap<>();
         private LatLng unknownPoint;
+        private ArrayList<ArrayList<String>> questions=new ArrayList<>();
+        private ArrayList<ArrayList<Integer>> questionsScores=new ArrayList<>();
+        private int score=0;
+        private int state;
 
 
         public String currentCheckpointId() {
-            if (Checkpoints != null) {
-                Set<String> checkpointsClone = ((HashMap<String, Integer>) Checkpoints.clone()).keySet();
-                for (int i=0;i<checkpointsClone.size();i++) {
-                    if (getPairForCheckpoints(Checkpoints.get(i)).second == missionCheckpointNotStarted) {
-                        return getPairForCheckpoints(Checkpoints.get(i)).first;
-                    }
-                }
+            if (CheckpointsStates != null) {
+
+                if(CheckpointsStates.contains(missionCheckpointStartedNotDone1QuestionLast))
+                    return Missions.getCheckpointByIndex(MissionID,CheckpointsStates.indexOf(missionCheckpointStartedNotDone1QuestionLast));
+
+                if(CheckpointsStates.contains(missionCheckpointStartedNotDone2QuestionsLast))
+                    return Missions.getCheckpointByIndex(MissionID,CheckpointsStates.indexOf(missionCheckpointStartedNotDone2QuestionsLast));
+
+                if(CheckpointsStates.contains(missionCheckpointStartedNotNear))
+                    return Missions.getCheckpointByIndex(MissionID,CheckpointsStates.indexOf(missionCheckpointStartedNotNear));
+
+                if(CheckpointsStates.contains(missionCheckpointNotStarted))
+                    return Missions.getCheckpointByIndex(MissionID,CheckpointsStates.indexOf(missionCheckpointNotStarted));
+
             }
             return null;
         }
-        private Constants.Pair<String,Integer> getPairForCheckpoints(HashMap<String,Integer> hashMap){
+        public Integer currentCheckpointIndex() {
+            if (CheckpointsStates != null) {
+
+                if(CheckpointsStates.contains(missionCheckpointStartedNotDone1QuestionLast))
+                    return CheckpointsStates.indexOf(missionCheckpointStartedNotDone1QuestionLast);
+
+                if(CheckpointsStates.contains(missionCheckpointStartedNotDone2QuestionsLast))
+                    return CheckpointsStates.indexOf(missionCheckpointStartedNotDone2QuestionsLast);
+                if(CheckpointsStates.contains(missionCheckpointStartedNotNear))
+                    return CheckpointsStates.indexOf(missionCheckpointStartedNotNear);
+                if(CheckpointsStates.contains(missionCheckpointNotStarted))
+                    return CheckpointsStates.indexOf(missionCheckpointNotStarted);
+
+            }
+            return null;
+        }
+        public String currentCheckpointQuestion(){
+            if (questions != null) {
+                int currentCheckpointIndex = currentCheckpointIndex();
+
+                if (CheckpointsStates.get(currentCheckpointIndex) == missionCheckpointStartedNotDone2QuestionsLast)
+                    return questions.get(currentCheckpointIndex()).get(0);
+
+                if (CheckpointsStates.get(currentCheckpointIndex) == missionCheckpointStartedNotDone1QuestionLast)
+                    return questions.get(currentCheckpointIndex()).get(1);
+
+                if (CheckpointsStates.get(currentCheckpointIndex) == missionCheckpointStartedNotNear)
+                    return questions.get(currentCheckpointIndex()).get(0);
+            }
+            return null;
+        }
+        private Pair<String,Integer> getPairForCheckpoints(HashMap<String,Integer> hashMap){
             HashMap<String,Integer> hashMap1= (HashMap<String, Integer>) hashMap.clone();
             for(String id:hashMap1.keySet()){
-                return new Constants.Pair<>(id,hashMap1.get(id));
+                return new Pair<>(id,hashMap1.get(id));
             }
             return null;
         }
         public boolean isCurrentCheckpointDoing(){
-            if(User.this.getCurrentCheckpoint(currentCheckpointId())>=missionCheckpointStartedNotDone2QuestionsLast)
-                return true;
+            int a=CheckpointsStates.get(currentCheckpointIndex());
+            if(a ==missionCheckpointStartedNotDone2QuestionsLast|| a== missionCheckpointStartedNotDone1QuestionLast)
+                if(state!=stateNotAnswering)
+                    return true;
             return false;
         }
+        public int curQuestionInCurCheckpoint(){
+            ArrayList<Integer> questionsInCurrent=questionsScores.get(currentCheckpointIndex());
+            int index=0;
+            for(int i=0;i<questionsInCurrent.size();++i){
+                if(questionsInCurrent.get(i)==0) {
+                    index = i;
+                    break;
+                }
+            }
+            return index;
 
-        public String getCurrentCheckpoint() {
-            return CurrentCheckpoint;
+        }
+        public void setStateAnswering(){
+            state=stateAnswering;
+        }
+        public void setStateNotAnswering(){
+            state=stateNotAnswering;
         }
 
-        public void setCurrentCheckpoint(String currentCheckpoint) {
-            CurrentCheckpoint = currentCheckpoint;
+        public void currentQuestionTrueAnswer(int time) {
+            score+=time;
+            int indexOfAnsweredQuestionInCheckpoint=curQuestionInCurCheckpoint();
+            int indexOfAnsweredCheckpoint=currentCheckpointIndex();
+            int answeredCheckpointState=CheckpointsStates.get(indexOfAnsweredCheckpoint);
+            int answeredCheckpointStateAfter=answeredCheckpointState;
+            String idOfAnsweredQuestion=questions.get(indexOfAnsweredCheckpoint).get(indexOfAnsweredQuestionInCheckpoint);
+
+            if(answeredCheckpointState==missionCheckpointStartedNotDone2QuestionsLast) {
+                CheckpointsStates.set(indexOfAnsweredCheckpoint, missionCheckpointStartedNotDone1QuestionLast);
+                answeredCheckpointStateAfter=missionCheckpointStartedNotDone1QuestionLast;
+            }
+
+            if(answeredCheckpointState==missionCheckpointStartedNotDone1QuestionLast){
+                CheckpointsStates.set(indexOfAnsweredCheckpoint,missionCheckpointDone);//TODO think
+                answeredCheckpointStateAfter=missionCheckpointDone;
+                if(CheckpointsStates.size()<=(indexOfAnsweredCheckpoint+1)) {
+                    //TODO finished
+                }else {
+                    CheckpointsStates.set(indexOfAnsweredCheckpoint + 1, missionCheckpointStartedNotNear);
+                    database.child("CurrentMission").child("Checkpoints").child((indexOfAnsweredCheckpoint+1)+"").child("State").setValue(missionCheckpointStartedNotNear);
+
+                }
+            }
+
+            //setting score in database
+            database.child("CurrentMission").child("Score").setValue(score);
+            //
+            //setting checkpoint state in database
+            database.child("CurrentMission").child("Checkpoints").child(indexOfAnsweredCheckpoint+"").child("State").setValue(answeredCheckpointStateAfter);
+            //
+
+            //setting question score in list and database
+            questionsScores.get(indexOfAnsweredCheckpoint).set(indexOfAnsweredQuestionInCheckpoint,time);
+
+            database.child("CurrentMission").child("Checkpoints").child(indexOfAnsweredCheckpoint+"").
+                    child("Questions").child(indexOfAnsweredQuestionInCheckpoint+"").child(idOfAnsweredQuestion).setValue(time);
+            //
+            setStateNotAnswering();
+
+        }
+
+        public void currentQuestionFalseAnswer(int time){
+            int indexOfAnsweredQuestionInCheckpoint=curQuestionInCurCheckpoint();
+            int indexOfAnsweredCheckpoint=currentCheckpointIndex();
+            int answeredCheckpointState=CheckpointsStates.get(indexOfAnsweredCheckpoint);
+            int answeredCheckpointStateAfter=answeredCheckpointState;
+            String idOfAnsweredQuestion=questions.get(indexOfAnsweredCheckpoint).get(indexOfAnsweredQuestionInCheckpoint);
+
+            if(answeredCheckpointState==missionCheckpointStartedNotDone2QuestionsLast) {
+                CheckpointsStates.set(indexOfAnsweredCheckpoint, missionCheckpointStartedNotDone1QuestionLast);
+                answeredCheckpointStateAfter=missionCheckpointStartedNotDone1QuestionLast;
+            }
+
+            if(answeredCheckpointState==missionCheckpointStartedNotDone1QuestionLast){
+                CheckpointsStates.set(indexOfAnsweredCheckpoint,missionCheckpointDone);//TODO think
+                answeredCheckpointStateAfter=missionCheckpointDone;
+                if(CheckpointsStates.size()<=(indexOfAnsweredCheckpoint+1)) {
+                    //TODO finished
+                }else {
+                    CheckpointsStates.set(indexOfAnsweredCheckpoint + 1, missionCheckpointStartedNotNear);
+                    database.child("CurrentMission").child("Checkpoints").child((indexOfAnsweredCheckpoint+1)+"").child("State").setValue(missionCheckpointStartedNotNear);
+
+                }
+            }
+            //setting question score in list and database
+            questionsScores.get(indexOfAnsweredCheckpoint).set(indexOfAnsweredQuestionInCheckpoint,-1);
+
+            database.child("CurrentMission").child("Checkpoints").child(indexOfAnsweredCheckpoint+"").
+                    child("Questions").child(indexOfAnsweredQuestionInCheckpoint+"").child(idOfAnsweredQuestion).setValue(-1);
+            //
+            //setting score in database
+            database.child("CurrentMission").child("Score").setValue(score);
+            //
+            //setting checkpoint state in database
+            database.child("CurrentMission").child("Checkpoints").child(indexOfAnsweredCheckpoint+"").
+                    child("State").setValue(answeredCheckpointStateAfter);
+            //
+
+            setStateNotAnswering();
+
+        }
+
+
+        public void nearToCheckpoint(){
+            setStateAnswering();
+            if(CheckpointsStates.get(currentCheckpointIndex())==missionCheckpointStartedNotNear)
+                CheckpointsStates.set(currentCheckpointIndex(),missionCheckpointStartedNotDone2QuestionsLast);
+        }
+
+        public String getCheckpointsIdByIndex(int index) {
+            return Missions.getCheckpointByIndex(MissionID,index);
         }
 
         public int getStartTime() {
@@ -286,13 +477,7 @@ public class User {
             MissionID = missionID;
         }
 
-        public HashMap<Integer, HashMap<String, Integer>> getCheckpoints() {
-            return Checkpoints;
-        }
 
-        public void setCheckpoints(HashMap<Integer,HashMap<String,Integer>> checkpoints) {
-            Checkpoints = checkpoints;
-        }
 
         public int getFinishTime() {
             return FinishTime;
@@ -316,6 +501,31 @@ public class User {
 
         public void setUnknownPoint(LatLng unknownPoint) {
             this.unknownPoint = unknownPoint;
+        }
+
+
+        public ArrayList<ArrayList<String>> getQuestions() {
+            return questions;
+        }
+
+        public void setQuestions(ArrayList<ArrayList<String>> questions) {
+            this.questions = questions;
+        }
+
+        public ArrayList<Integer> getCheckpointsStates() {
+            return CheckpointsStates;
+        }
+
+        public void setCheckpointsStates(ArrayList<Integer> lCheckpointsStates) {
+            CheckpointsStates = lCheckpointsStates;
+        }
+
+
+        public void setScore(int score) {
+            this.score= score;
+        }
+        public  int getState(){
+            return state;
         }
     }
 

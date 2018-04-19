@@ -1,14 +1,12 @@
 package com.example.erik.destination;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.Rect;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
@@ -30,11 +28,13 @@ import android.widget.ProgressBar;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.RelativeLayout;
-import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
+import com.bumptech.glide.request.target.SimpleTarget;
+import com.bumptech.glide.request.transition.Transition;
+import com.example.erik.destination.Constants.Pair;
 import com.example.erik.destination.Question.MultipleQuestionWithMoreTrue;
 import com.example.erik.destination.Question.MultipleQuestionWithOneTrue;
 import com.example.erik.destination.Question.SelectDifference;
@@ -58,12 +58,6 @@ import com.mapbox.mapboxsdk.geometry.VisibleRegion;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
-import com.squareup.picasso.Callback;
-import com.squareup.picasso.MemoryPolicy;
-import com.squareup.picasso.NetworkPolicy;
-import com.squareup.picasso.OkHttpDownloader;
-import com.squareup.picasso.Picasso;
-import com.squareup.picasso.Target;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -74,6 +68,8 @@ import static com.example.erik.destination.Constants.checkpointMode;
 import static com.example.erik.destination.Constants.missionMode;
 import static com.example.erik.destination.Constants.missionStartedMode;
 import static com.example.erik.destination.Constants.secondsBeforeQuestion;
+import static com.example.erik.destination.Constants.secondsForQuestion;
+import static com.example.erik.destination.Constants.stateNotAnswering;
 
 public class MapsActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener, OnMapReadyCallback{
 
@@ -100,11 +96,11 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
     public static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS = UPDATE_INTERVAL_IN_MILLISECONDS / 2;
     LatLng CurrentLocation;
     DatabaseReference userDatabase;
-
     TextView questionMultipleChoiceOneTrue;
     RadioButton boxAnswer1MultipleChoiceOneTrue;
     RadioGroup answersMultipleChoiceOneTrue;
     RelativeLayout questionsMultipleChoiceOneTrue;
+    public static Context context;
 
 
     private float startingPointerX;//for red circle
@@ -157,11 +153,14 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
 
                 }
             });
+            //for other classes
+            context=getApplicationContext();
+            //
             userDatabase = FirebaseDatabase.getInstance().getReference().child(FirebaseAuth.getInstance().getCurrentUser().getUid());
             passCheckpoint.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    Constants.Pair<String, Float> nearCheckpointId = (Constants.Pair<String, Float>) passCheckpoint.getTag();
+                    Pair<String, Float> nearCheckpointId = (Pair<String, Float>) passCheckpoint.getTag();
                     if(nearCheckpointId!=null){
                         user.setCheckpointDone(nearCheckpointId.first);
                         user.addScore((TextView)findViewById(R.id.score_type_1),"score_type_1",checkpoints.getCheckpointById(nearCheckpointId.first).getScores().get("score_type_1"));
@@ -239,7 +238,7 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
             );
 
             if (FirebaseAuth.getInstance().getCurrentUser().getPhotoUrl() != null) {//user photo download and set
-                Picasso.Builder builder = new Picasso.Builder(this);                //
+                /*Picasso.Builder builder = new Picasso.Builder(this);                //
                 builder.downloader(new OkHttpDownloader(this, Integer.MAX_VALUE));  //
                 Picasso build = builder.build();                                    //
                 //
@@ -249,10 +248,16 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
                 try {                                                               //
                     Picasso.setSingletonInstance(build);                            //
                 } catch (IllegalStateException e) {                                 //
-                }                                                                   //
+                }    */                                                               //
                 //
-                Picasso.with(MapsActivity.this).load(FirebaseAuth.getInstance().getCurrentUser().getPhotoUrl()).networkPolicy(NetworkPolicy.OFFLINE).into(personPhoto, new Callback() {
-                    @Override                                                       //
+                GlideApp.with(MapsActivity.this).asBitmap().load(FirebaseAuth.getInstance().getCurrentUser().getPhotoUrl()).into(new SimpleTarget<Bitmap>() {
+                    @Override
+                    public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
+                        personPhoto.setImageBitmap(Constants.getCircleCroppedBitmap(resource));
+                        ((ImageView)findViewById(R.id.personPhotoInLayout)).setImageBitmap(Constants.getCircleCroppedBitmap(resource));
+                        }
+                        });
+                   /* @Override                                                       //
                     public void onSuccess() {
                         Drawable draw = personPhoto.getDrawable();
                         if (draw instanceof BitmapDrawable) {
@@ -294,7 +299,7 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
                         });
 
                     }
-                });                                                                 //
+                }) {*/                                                               //
 
             }
             // setContentView(R.layout.activity_maps);
@@ -319,6 +324,7 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
         createLocationRequest();
     }
 
+    @SuppressLint("RestrictedApi")
     protected void createLocationRequest() {
         Log.i(constants.getLogTag(), "createLocationRequest");
         mGoogleApiClient.connect();
@@ -381,7 +387,7 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
         if(whichModeIsActive==missionMode)
             missionNear();
         if(whichModeIsActive==missionStartedMode) {
-            //TODO startedMission();
+            startedMission();
         }
     }
 
@@ -466,7 +472,8 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
                 startMission.setTag(null);
                 startMission.setVisibility(View.GONE);
                findViewById(R.id.checkpointView).setVisibility(View.GONE);
-                curLocMarker.hideInfoWindow();
+               if(curLocMarker!=null)
+                    curLocMarker.hideInfoWindow();
             }
         });
     }
@@ -533,25 +540,25 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
     }
     private void checkpointNear(){
         if(whichModeIsActive== checkpointMode) {
-            Constants.Pair<String, Float> curr = checkpoints.isNearToAnyCheckpoint(CurrentLocation);
+            Pair<String, Float> curr = checkpoints.isNearToAnyCheckpoint(CurrentLocation);
             if (curr == null) {
                 passCheckpoint.setVisibility(View.GONE);
             }
             if (passCheckpoint.getTag() == null) {
                 if (curr != null) {
-                    if (checkpoints.checkpointMap.get(curr.first).isLoaded() && !user.ifCheckpointDone(checkpoints.checkpointMap.get(curr.first).getId())) {
+                    if (Checkpoints.checkpointMap.get(curr.first).isLoaded() && !user.ifCheckpointDone(Checkpoints.checkpointMap.get(curr.first).getId())) {
                         //passCheckpoint.setVisibility(View.VISIBLE);
                         passCheckpoint.setTag(curr);
-                        checkpoints.checkpointMap.get(((Constants.Pair<String, Float>) passCheckpoint.getTag()).first).startPulsing();
+                        Checkpoints.checkpointMap.get(((Pair<String, Float>) passCheckpoint.getTag()).first).startPulsing();
                         findViewById(R.id.checkpointTimeProgress).setVisibility(View.VISIBLE);
-                        if(checkpoints.checkpointMap.get(((Constants.Pair<String, Float>) passCheckpoint.getTag()).first).getMinTime()!=0){
-                            ((ProgressBar)findViewById(R.id.checkpointTimeProgress)).setMax(checkpoints.checkpointMap.get(((Constants.Pair<String, Float>) passCheckpoint.getTag()).first).getMinTime());
+                        if(Checkpoints.checkpointMap.get(((Pair<String, Float>) passCheckpoint.getTag()).first).getMinTime()!=0){
+                            ((ProgressBar)findViewById(R.id.checkpointTimeProgress)).setMax(Checkpoints.checkpointMap.get(((Pair<String, Float>) passCheckpoint.getTag()).first).getMinTime());
                         }else{
-                            ((ProgressBar)findViewById(R.id.checkpointTimeProgress)).setMax(constants.minTimeToStayInCheckpoint);
+                            ((ProgressBar)findViewById(R.id.checkpointTimeProgress)).setMax(Constants.minTimeToStayInCheckpoint);
                         }
                         if(user.getCurrentCheckpoint(curr.first)==null)
                             user.setCurrentCheckpoint(curr.first, ((ProgressBar)findViewById(R.id.checkpointTimeProgress)).getMax());
-                        ((ProgressBar) findViewById(R.id.checkpointTimeProgress)).setProgress( ((ProgressBar) findViewById(R.id.checkpointTimeProgress)).getMax()-user.getCurrentCheckpoint((((Constants.Pair<String, Float>) passCheckpoint.getTag()).first)));
+                        ((ProgressBar) findViewById(R.id.checkpointTimeProgress)).setProgress( ((ProgressBar) findViewById(R.id.checkpointTimeProgress)).getMax()-user.getCurrentCheckpoint((((Pair<String, Float>) passCheckpoint.getTag()).first)));
                         findViewById(R.id.checkpointTimeProgress).postDelayed(checkpointTimeCheck,1000);
 
                     }
@@ -564,18 +571,18 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
         @Override
         public void run() {
             if (whichModeIsActive == checkpointMode) {
-                if((Constants.Pair<String, Float>) passCheckpoint.getTag()!=null){
-                if (isNearCheckpoint(((Constants.Pair<String, Float>) passCheckpoint.getTag()).first, curLocMarker.getPosition())) {
+                if((Pair<String, Float>) passCheckpoint.getTag()!=null){
+                if (isNearCheckpoint(((Pair<String, Float>) passCheckpoint.getTag()).first, curLocMarker.getPosition())) {
                     if (((ProgressBar) findViewById(R.id.checkpointTimeProgress)).getProgress() < ((ProgressBar) findViewById(R.id.checkpointTimeProgress)).getMax()) {
                         findViewById(R.id.checkpointTimeProgress).postDelayed(this, 1000);
-                        ((ProgressBar) findViewById(R.id.checkpointTimeProgress)).setProgress( ((ProgressBar) findViewById(R.id.checkpointTimeProgress)).getMax()-user.getCurrentCheckpoint((((Constants.Pair<String, Float>) passCheckpoint.getTag()).first)) + 1);
-                        user.setCurrentCheckpoint((((Constants.Pair<String, Float>) passCheckpoint.getTag()).first),((ProgressBar) findViewById(R.id.checkpointTimeProgress)).getMax()-((ProgressBar) findViewById(R.id.checkpointTimeProgress)).getProgress());
+                        ((ProgressBar) findViewById(R.id.checkpointTimeProgress)).setProgress( ((ProgressBar) findViewById(R.id.checkpointTimeProgress)).getMax()-user.getCurrentCheckpoint((((Pair<String, Float>) passCheckpoint.getTag()).first)) + 1);
+                        user.setCurrentCheckpoint((((Pair<String, Float>) passCheckpoint.getTag()).first),((ProgressBar) findViewById(R.id.checkpointTimeProgress)).getMax()-((ProgressBar) findViewById(R.id.checkpointTimeProgress)).getProgress());
 
                     } else {
                         findViewById(R.id.passCheckpoint).setVisibility(View.VISIBLE);
                         findViewById(R.id.checkpointTimeProgress).setVisibility(View.GONE);
                         ((ProgressBar) findViewById(R.id.checkpointTimeProgress)).setProgress(0);
-                        user.setCurrentCheckpoint((((Constants.Pair<String, Float>) passCheckpoint.getTag()).first),0);
+                        user.setCurrentCheckpoint((((Pair<String, Float>) passCheckpoint.getTag()).first),0);
                     }
                 }
                 }
@@ -583,7 +590,7 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
             }
             if(whichModeIsActive==missionStartedMode){
                 if (isNearCheckpoint((String) findViewById(R.id.checkpointTimeProgress).getTag(), curLocMarker.getPosition())) {
-                    if (((ProgressBar) findViewById(R.id.checkpointTimeProgress)).getProgress() < ((ProgressBar) findViewById(R.id.checkpointTimeProgress)).getMax()) {
+                   /* if (((ProgressBar) findViewById(R.id.checkpointTimeProgress)).getProgress() < ((ProgressBar) findViewById(R.id.checkpointTimeProgress)).getMax()) {
                         findViewById(R.id.checkpointTimeProgress).postDelayed(this, 1000);
                         ((ProgressBar) findViewById(R.id.checkpointTimeProgress)).setProgress(((ProgressBar) findViewById(R.id.checkpointTimeProgress)).getMax() - user.getCurrentCheckpoint((String) findViewById(R.id.checkpointTimeProgress).getTag()) + 1);
                         user.setCurrentCheckpoint(((String) findViewById(R.id.checkpointTimeProgress).getTag()), ((ProgressBar) findViewById(R.id.checkpointTimeProgress)).getMax() - ((ProgressBar) findViewById(R.id.checkpointTimeProgress)).getProgress());
@@ -595,7 +602,7 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
                         ((ProgressBar) findViewById(R.id.checkpointTimeProgress)).setProgress(0);
                         user.setCheckpointDone((String) findViewById(R.id.checkpointTimeProgress).getTag());
                         user.addScore((TextView) findViewById(R.id.score_type_1), "score_type_1", checkpoints.checkpointMap.get((String) findViewById(R.id.checkpointTimeProgress).getTag()).getScores().get("score_type_1"));
-                    }
+                    }*/
                 }else{
                     //TODO notify user that will not get point for this checkpoint
                 }
@@ -608,15 +615,20 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
             }*/
         }
     };
-   /* private void startedMission() {
-        String currentCheckpointId=user.currentMission.getCurrentCheckpoint();
+
+    private void startedMission() {
+        String currentCheckpointId=user.currentMission.currentCheckpointId();
         startedMissionCheckpointNear(currentCheckpointId);
-        if(isNearCheckpoint(currentCheckpointId,curLocMarker.getPosition()) && !user.currentMission.isCurrentCheckpointDoing()){
-            showCheckpointQuestion(currentCheckpointId);
-            startQuestionTime();
+        if(isNearCheckpoint(currentCheckpointId,curLocMarker.getPosition()) && !user.currentMission.isCurrentCheckpointDoing()&& user.currentMission.getState()==stateNotAnswering){
+            user.currentMission.nearToCheckpoint();
+
+            checkpointAndQuestion startQuestion=new checkpointAndQuestion(user.currentMission.currentCheckpointIndex(),user.currentMission.currentCheckpointQuestion());
+            findViewById(R.id.before_question_layout).postDelayed(startQuestion,1);
+            //showCheckpointQuestion(currentCheckpointId);
+           Log.v(constants.getLogTag(),currentCheckpointId);
         }
     }
-
+/*
     int startedQuestionFinishTime;
     int
     Runnable startQuestionTime =new Runnable() {
@@ -630,7 +642,7 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
     private void startQuestionTime() {
         startedQuestionFinishTime= SystemClock.elapsedRealtime()+
     }
-
+*/
     private void startedMissionCheckpointNear(String id){
         if(id!=null){
             if(whichModeIsActive==missionStartedMode){
@@ -645,7 +657,7 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
         }
     }
 
-
+/*
     private void startMissionCheckpoint(String id){
 
     }
@@ -662,7 +674,7 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
     }
 */
    private void missionNear() {
-       Constants.Pair<String,Double> missionPair=missions.isNearToAnyMission(curLocMarker.getPosition());
+       Pair<String,Double> missionPair=missions.isNearToAnyMission(curLocMarker.getPosition());
        if(missionPair!=null){
            //ToDo Say that you are near to a mission ?start?
        }
@@ -693,24 +705,63 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
         MapsActivity.this.finish();
     }
 
+    public class checkpointAndQuestion implements Runnable {
 
-    Target targetForSellectDifference;
-    @SuppressLint("WrongViewCast")
-    void showCheckpointQuestion(final String id) {
-        findViewById(R.id.before_question_textview).setVisibility(View.VISIBLE);
-        for(int i=secondsBeforeQuestion ;i>0;i--){
-            try {
-                ((TextView)findViewById(R.id.before_question_textview)).setText(i);
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        int i=secondsBeforeQuestion;
+        int index;
+        String questionId;
+        public checkpointAndQuestion(int lindex,String lquestionId) {
+            index=lindex;
+            questionId=lquestionId;
+        }
+
+        @Override
+        public void run() {
+            Log.v(constants.getLogTag(),i+"");
+            if(i>0) {
+                findViewById(R.id.before_question_layout).setVisibility(View.VISIBLE);
+                ((TextView) findViewById(R.id.before_question_textview)).setText(i + "");
+                findViewById(R.id.before_question_layout).postDelayed(this,1000);
+                --i;
+            }else{
+                findViewById(R.id.before_question_layout).setVisibility(View.GONE);
+                showCheckpointQuestion(questionId);
+                i=secondsBeforeQuestion;
             }
         }
-        findViewById(R.id.before_question_textview).setVisibility(View.GONE);
-        String selectedQuestionId = checkpoints.checkpointMap.get(id).chooseSomeQuestion();
+    }
+
+    public class QuestionTimer implements Runnable {
+
+        int i=secondsForQuestion;
+        int index;
+        String questionId;
+        public QuestionTimer(int lindex,String lquestionId) {
+            index=lindex;
+            questionId=lquestionId;
+        }
+        public boolean isAnswered=false;
+        @Override
+        public void run() {
+            if(i>0 && !isAnswered) {
+                ((TextView) findViewById(R.id.questions_select_difference_timer)).setText(i+"");
+                findViewById(R.id.questions_select_difference_timer).postDelayed(this,1000);
+                --i;
+            }else{
+                if (!isAnswered)
+                    i = secondsBeforeQuestion;
+                else i = i;
+            }
+        }
+    }
+
+    @SuppressLint("WrongViewCast")
+    void showCheckpointQuestion(final String questionId) {
+
         //if(checkpoints.questions.getQuestion(selectedQuestionId) instanceof MultipleQuestionWithOneTrue){
-        if (checkpoints.questions.getQuestion(selectedQuestionId) instanceof MultipleQuestionWithOneTrue) {
-            MultipleQuestionWithOneTrue question = (MultipleQuestionWithOneTrue) checkpoints.questions.getQuestion(selectedQuestionId);
+
+        if (checkpoints.questions.getQuestion(questionId) instanceof MultipleQuestionWithOneTrue) {
+            MultipleQuestionWithOneTrue question = (MultipleQuestionWithOneTrue) checkpoints.questions.getQuestion(questionId);
             String[] answers = question.chooseRandomMixedAnsweres("arm");
             if (answers != null) {
                 int Rid = R.id.boxAnswer2_multiple_choice_one_true;
@@ -724,7 +775,7 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
                 }
                 boxAnswer1MultipleChoiceOneTrue.setText(answers[answers.length - 1]);
 //                radioGroup.addView(boxAnswer1MultipleChoiceOneTrue);
-                questionMultipleChoiceOneTrue.setText(question.getQuestionText().get("arm"));
+                questionMultipleChoiceOneTrue.setText(question.getQuestionText().get("arm"));//TODO
             }
             answersMultipleChoiceOneTrue.invalidate();
             questionsMultipleChoiceOneTrue.setVisibility(View.VISIBLE);
@@ -735,16 +786,19 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
                     return true;
                 }
             });
-            questionsMultipleChoiceOneTrue.setTag(new Constants.Pair<>(id, selectedQuestionId));
+            questionsMultipleChoiceOneTrue.setTag(questionId);
         }
-        if(checkpoints.questions.getQuestion(selectedQuestionId) instanceof SelectDifference){
-            final SelectDifference question= (SelectDifference) checkpoints.questions.getQuestion(selectedQuestionId);
-            targetForSellectDifference=new Target() {
+        if(checkpoints.questions.getQuestion(questionId) instanceof SelectDifference){
+            final SelectDifference question= (SelectDifference) checkpoints.questions.getQuestion(questionId);
+            StorageReference imageRef=FirebaseStorage.getInstance().getReference().child("questions").child("sel_diff").child(questionId);
+            GlideApp.with(getApplicationContext()).asBitmap().load(imageRef).into(new SimpleTarget<Bitmap>() {
                 @Override
-                public void onBitmapLoaded(Bitmap bitmap1, Picasso.LoadedFrom from) {
-                    final Bitmap bitmap=bitmap1;
+                public void onResourceReady(@NonNull Bitmap bitmap1, @Nullable Transition<? super Bitmap> transition) {
                     findViewById(R.id.questions_select_difference).setVisibility(View.VISIBLE);
-                    ((ImageView)findViewById(R.id.selectDifferenceImage)).setImageBitmap(bitmap);
+
+
+
+                    ((ImageView)findViewById(R.id.selectDifferenceImage)).setImageBitmap(bitmap1);
                     Point a=new Point();
                     int[] positionOfImage=new int[2];
                     findViewById(R.id.selectDifferenceImage).getLocationOnScreen(positionOfImage);
@@ -753,7 +807,7 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
                     @SuppressLint("WrongViewCast")
                     ViewGroup.LayoutParams params1=findViewById(R.id.selectDifferenceImage).getLayoutParams();
                     params1.width=imageWidth;
-                    params1.height= (int) (((double)imageWidth/bitmap.getWidth())*bitmap.getHeight());
+                    params1.height= (int) (((double)imageWidth/ bitmap1.getWidth())* bitmap1.getHeight());
                     findViewById(R.id.selectDifferenceImage).setLayoutParams(params1);
                     question.setRealRingSize((int) (question.getRingSizeInPercent()*imageWidth/100));
                     question.setTrueAnswerForThisScreen((int) (imageWidth*question.getTrueAnswer().first/100), (int) (imageWidth*question.getTrueAnswer().second/100));
@@ -762,7 +816,18 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
                     params.width=question.getRealRingSize();
                     params.height=question.getRealRingSize();
                     findViewById(R.id.selectDifferenceRing).setLayoutParams(params);
-                    findViewById(R.id.questions_select_difference).setTag(new Constants.Pair<>(id,question));
+                    findViewById(R.id.questions_select_difference).setTag(question.getId());
+
+                    QuestionTimer questionTimer=new QuestionTimer(user.currentMission.currentCheckpointIndex(),questionId);
+                    user.currentMission.setStateAnswering();
+                    findViewById(R.id.questions_select_difference_timer).setTag(questionTimer);
+                    findViewById(R.id.questions_select_difference_timer).post(questionTimer);
+                }
+            });
+            /*targetForSellectDifference=new Target() {
+                @Override
+                public void onBitmapLoaded(Bitmap bitmap1, Picasso.LoadedFrom from) {
+
                 }
 
                 @Override
@@ -775,10 +840,11 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
 
                 }
             };
-            Picasso.with(getApplicationContext()).load(question.getURl()).memoryPolicy(MemoryPolicy.NO_CACHE).into(targetForSellectDifference);
+            Picasso.with(getApplicationContext()).load(question.getURl()).networkPolicy(NetworkPolicy.OFFLINE).into(targetForSellectDifference);
+*/
         }
-        if(checkpoints.questions.getQuestion(selectedQuestionId) instanceof MultipleQuestionWithMoreTrue){
-            MultipleQuestionWithMoreTrue question= (MultipleQuestionWithMoreTrue) checkpoints.questions.getQuestion(selectedQuestionId);
+        if(checkpoints.questions.getQuestion(questionId) instanceof MultipleQuestionWithMoreTrue){
+            MultipleQuestionWithMoreTrue question= (MultipleQuestionWithMoreTrue) checkpoints.questions.getQuestion(questionId);
             ((TextView)findViewById(R.id.question_multiple_choice_more_true)).setText(question.getQuestionText().get("arm"));
             String[] mixed=question.chooseRandomMixedAnsweres("arm");
             int Rid = R.id.checkBox0_multiple_choice_more_true;
@@ -794,21 +860,23 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
                 ((LinearLayout) findViewById(R.id.answers_multiple_choice_more_true)).addView(temp);
                 ++Rid;
             }
-            findViewById(R.id.questions_multiple_choice_more_true).setTag(new Constants.Pair<>(id,question));
+            findViewById(R.id.questions_multiple_choice_more_true).setTag(questionId);
             findViewById(R.id.questions_multiple_choice_more_true).setVisibility(View.VISIBLE);
         }
     }
 
     public void submitAnswerForMultipleChoiceOneTrue(View view) {
-        Constants.Pair<String, String> idAndQuestionId = (Constants.Pair<String, String>) questionsMultipleChoiceOneTrue.getTag();
+        String questionId= (String) questionsMultipleChoiceOneTrue.getTag();
+        Pair<String, String> CheckpointIdAndQuestionId = new Pair<>(user.currentMission.currentCheckpointId(),questionId);
         if (answersMultipleChoiceOneTrue.getCheckedRadioButtonId() != -1) {
             RadioButton selected = (RadioButton) findViewById(answersMultipleChoiceOneTrue.getCheckedRadioButtonId());
             answersMultipleChoiceOneTrue.clearCheck();
-            if (((MultipleQuestionWithOneTrue) checkpoints.questions.getQuestion(idAndQuestionId.getSecond())).isAnswerTrue(selected.getText().toString(), "arm")) {
+            if (((MultipleQuestionWithOneTrue) checkpoints.questions.getQuestion(CheckpointIdAndQuestionId.getSecond())).isAnswerTrue(selected.getText().toString(), "arm")) {
                 Toast.makeText(getApplicationContext(), "True", Toast.LENGTH_LONG).show();
-                user.setCheckpointDone(idAndQuestionId.getFirst());
+                user.setCheckpointDone(CheckpointIdAndQuestionId.getFirst());
 
-                user.addScore((TextView) findViewById(R.id.score_type_1), "score_type_1", checkpoints.checkpointMap.get(idAndQuestionId.getFirst()).getScores().get("score_type_1"));
+
+                //user.addScore((TextView) findViewById(R.id.score_type_1), "score_type_1", checkpoints.checkpointMap.get(CheckpointIdAndQuestionId.getFirst()).getScores().get("score_type_1"));
             } else {
                 Toast.makeText(getApplicationContext(), "False", Toast.LENGTH_LONG).show();
             }
@@ -827,7 +895,10 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
     }
 
     public void submitAnswerForSelectDifference(View view) {
-        Constants.Pair<String,SelectDifference> idAndQuestion= (Constants.Pair<String,SelectDifference>) findViewById(R.id.questions_select_difference).getTag();
+        QuestionTimer questionTimer= (QuestionTimer) findViewById(R.id.questions_select_difference_timer).getTag();
+        questionTimer.isAnswered=true;
+        String questionId= (String) findViewById(R.id.questions_select_difference).getTag();
+        Pair<String,SelectDifference> idAndQuestion= new Pair<>(user.currentMission.currentCheckpointId(),(SelectDifference) Questions.getQuestionById(questionId));
         //question.setTrueAnswerForThisScreen((int) ((question.getTrueAnswer().first*findViewById(R.id.selectDifferenceImage).getWidth()/100)+findViewById(R.id.questions_select_difference).getPaddingLeft()), (int) ((question.getTrueAnswer().second*findViewById(R.id.selectDifferenceImage).getHeight()/100)+findViewById(R.id.questions_select_difference).getPaddingLeft()));
 
         Rect r=new Rect();
@@ -837,11 +908,14 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
         if(r.contains(idAndQuestion.second.getTrueAnswerForThisScreen().first+rect.left,idAndQuestion.second.getTrueAnswerForThisScreen().second+rect.top)){
         //if(Math.sqrt((findViewById(R.id.selectDifferenceRing).getY()+findViewById(R.id.selectDifferenceRing).getPivotY() - question.getTrueAnswerForThisScreen().second)*(findViewById(R.id.selectDifferenceRing).getY()+findViewById(R.id.selectDifferenceRing).getPivotY()- question.getTrueAnswerForThisScreen().second) + (findViewById(R.id.selectDifferenceRing).getX()+findViewById(R.id.selectDifferenceRing).getPivotX() - question.getTrueAnswerForThisScreen().first)*(findViewById(R.id.selectDifferenceRing).getX()+findViewById(R.id.selectDifferenceRing).getPivotX() - question.getTrueAnswerForThisScreen().first))<=findViewById(R.id.selectDifferenceRing).getHeight()/2){
             Toast.makeText(this,"True",Toast.LENGTH_LONG).show();
-            user.setCheckpointDone(idAndQuestion.first);
-            user.addScore((TextView) findViewById(R.id.score_type_1), "score_type_1", checkpoints.checkpointMap.get(idAndQuestion.getFirst()).getScores().get("score_type_1"));
+            user.currentMission.currentQuestionTrueAnswer(questionTimer.i);
+            //user.setCheckpointDone(idAndQuestion.first);
+           // user.addScore((TextView) findViewById(R.id.score_type_1), "score_type_1", checkpoints.checkpointMap.get(idAndQuestion.getFirst()).getScores().get("score_type_1"));
         }
-        else
-            Toast.makeText(this,"False",Toast.LENGTH_LONG).show();
+        else {
+            Toast.makeText(this, "False", Toast.LENGTH_LONG).show();
+            user.currentMission.currentQuestionFalseAnswer(questionTimer.i);
+        }
         findViewById(R.id.questions_select_difference).setTag(null);
         findViewById(R.id.questions_select_difference).setVisibility(View.GONE);
     }
@@ -861,7 +935,8 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
             else
                 break;
         }
-        Constants.Pair<String,MultipleQuestionWithMoreTrue> idAndQuestion= (Constants.Pair<String, MultipleQuestionWithMoreTrue>) findViewById(R.id.questions_multiple_choice_more_true).getTag();
+        String questionId= (String) findViewById(R.id.questions_multiple_choice_more_true).getTag();
+        Pair<String,MultipleQuestionWithMoreTrue> idAndQuestion=new Pair<>(user.currentMission.currentCheckpointId(),(MultipleQuestionWithMoreTrue)Questions.getQuestionById(questionId)) ;
         if(idAndQuestion.second.isAnswerTrue(selectedAnswers,"arm")){
             Toast.makeText(getApplicationContext(), "True", Toast.LENGTH_LONG).show();
             user.setCheckpointDone(idAndQuestion.getFirst());
@@ -939,7 +1014,6 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
             ((TextView)(findViewById(R.id.checkpointViewDescription))).setText("");
         //TODO show imaegs
 
-        List<String> realImageUrls=new ArrayList<>();
         String[] splitedId=id.split("_");
         StorageReference data= FirebaseStorage.getInstance().getReference();
        for(int i=0;i<splitedId.length-2;i++){
@@ -949,15 +1023,20 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
         /*for(String num:imageUrls){
             realImageUrls.add(data.child(id+"_"+num));
         }*/
-
         ((ImageView) findViewById(R.id.checkpointViewImageView1)).setImageResource(0);
         ((ImageView) findViewById(R.id.checkpointViewImageView2)).setImageResource(0);
         ((ImageView) findViewById(R.id.checkpointViewImageView3)).setImageResource(0);
         ((ImageView) findViewById(R.id.checkpointViewImageView4)).setImageResource(0);
-        if(imageUrls!=null) {
+
+        GlideApp.with(getApplicationContext()).asBitmap().load(data.child(id+"_0")).into((ImageView)findViewById(R.id.checkpointViewImageView1));
+        GlideApp.with(getApplicationContext()).asBitmap().load(data.child(id+"_1")).into((ImageView)findViewById(R.id.checkpointViewImageView2));
+        GlideApp.with(getApplicationContext()).asBitmap().load(data.child(id+"_2")).into((ImageView)findViewById(R.id.checkpointViewImageView3));
+        GlideApp.with(getApplicationContext()).asBitmap().load(data.child(id+"_3")).into((ImageView)findViewById(R.id.checkpointViewImageView4));
+
+        /*if(imageUrls!=null) {
             if(imageUrls.size()>0) {
                 if (imageUrls.get(0) != null)
-                    Picasso.with(MapsActivity.this).load(imageUrls.get(0).toString()).networkPolicy(NetworkPolicy.NO_CACHE).into((ImageView) findViewById(R.id.checkpointViewImageView1));
+                    GlideApp.with(MapsActivity.this).load(imageUrls.get(0).toString()).networkPolicy(NetworkPolicy.NO_CACHE).into((ImageView) findViewById(R.id.checkpointViewImageView1));
                if(imageUrls.size()>1) {
                    if (imageUrls.get(1) != null)
                        Picasso.with(MapsActivity.this).load(imageUrls.get(1).toString()).networkPolicy(NetworkPolicy.NO_CACHE).into((ImageView) findViewById(R.id.checkpointViewImageView2));
@@ -986,7 +1065,7 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
                 findViewById(R.id.checkpointViewImageView3).setLayoutParams(new TableLayout.LayoutParams(TableLayout.LayoutParams.WRAP_CONTENT, TableLayout.LayoutParams.WRAP_CONTENT, 0f));
                 findViewById(R.id.checkpointViewImageView4).setLayoutParams(new TableLayout.LayoutParams(TableLayout.LayoutParams.WRAP_CONTENT, TableLayout.LayoutParams.WRAP_CONTENT, 0f));
             }
-        }
+        }*/
         findViewById(R.id.checkpointView).setVisibility(View.VISIBLE);
     }
 
@@ -1040,6 +1119,4 @@ public class MapsActivity extends AppCompatActivity implements GoogleApiClient.C
         if (mapFragment != null)
             mapFragment.onSaveInstanceState(outState);
     }
-
-
 }

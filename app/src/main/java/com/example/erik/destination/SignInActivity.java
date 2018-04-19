@@ -181,7 +181,7 @@ public class SignInActivity extends AppCompatActivity implements LoaderCallbacks
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
     }
-    void goToSignUp(View view){
+   public void goToSignUp(View view){
         Intent intent=new Intent(SignInActivity.this,SignUpActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         SignInActivity.this.finish();
@@ -373,7 +373,6 @@ public class SignInActivity extends AppCompatActivity implements LoaderCallbacks
         mEmailView.setAdapter(adapter);
     }
 
-
     private interface ProfileQuery {
         String[] PROJECTION = {
                 ContactsContract.CommonDataKinds.Email.ADDRESS,
@@ -460,7 +459,6 @@ public class SignInActivity extends AppCompatActivity implements LoaderCallbacks
         Intent intent=new Intent(SignInActivity.this,MapsActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
         startActivity(intent);
-        SignInActivity.this.finish();
     }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {

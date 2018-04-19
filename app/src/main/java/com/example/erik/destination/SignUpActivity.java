@@ -509,8 +509,8 @@ public class SignUpActivity extends AppCompatActivity implements LoaderCallbacks
 
     public void goToMain() {
         Intent main_intent = new Intent(this, MapsActivity.class);
+        main_intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
         startActivity(main_intent);
-        SignUpActivity.this.finish();
     }
 
     public Bitmap getCircleCroppedBitmap(Bitmap bitmap) {

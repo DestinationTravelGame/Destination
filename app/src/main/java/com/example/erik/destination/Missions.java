@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.util.Log;
 
+import com.example.erik.destination.Constants.Pair;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -35,7 +36,7 @@ import static com.example.erik.destination.MapsActivity.mMap;
  */
 
 public class Missions {
-    private HashMap<String, Mission> missionsMap = new HashMap<>();
+    private static HashMap<String, Mission> missionsMap = new HashMap<>();
     private ArrayList<String> missionsId = new ArrayList<>();
     private DatabaseReference database = FirebaseDatabase.getInstance().getReference();
     private Constants constants = new Constants();
@@ -412,17 +413,20 @@ public class Missions {
         double foundLongitude = y + y0;
         return new LatLng(foundLatitude, foundLongitude);
     }
-    public  Constants.Pair<String,Double> isNearToAnyMission(LatLng currentLocation){
-        Constants.Pair<String,Double> returning = null;
+    public static String getCheckpointByIndex(String missionId,int Index){
+        return missionsMap.get(missionId).getCheckpointsIDs().get(Index);
+    }
+    public  Pair<String,Double> isNearToAnyMission(LatLng currentLocation){
+        Pair<String,Double> returning = null;
         if(!missionsMap.isEmpty() && currentLocation!=null){
             for(Mission a:missionsMap.values()){
                 if(a.getLocation()!=null) {
                     double distance=distanceBetween(a.getLocation(), currentLocation);
                     if (distance<distanceMission) {//TODO firebaseum avelacnel marker radius
                         if(returning==null){
-                            returning=new Constants.Pair<>(a.getId(),distance);
+                            returning=new Pair<>(a.getId(),distance);
                         }else if(returning.second>distance)
-                            returning=new Constants.Pair<>(a.getId(),distance);
+                            returning=new Pair<>(a.getId(),distance);
                     }
                 }
             }
